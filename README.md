@@ -22,6 +22,12 @@ The system performs **interactive, on-demand classification**, generating probab
 
 ---
 
+## Project Documentation
+For a deep dive into the business context, methodology, and strategic roadmap, please refer to the:
+* **[Executive & Technical Case Study (PDF)](./docs/Case_Study_Neural_Threat_Analyzer_Luis_Moto.pdf)**
+
+---
+
 ## Business & Security Objective
 
 The project explores a critical challenge in modern cybersecurity:
