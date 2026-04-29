@@ -1,4 +1,5 @@
 # Neural Threat Analyzer  
+
 ### Hybrid NLP & Structural Machine Learning for Threat Detection
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)
@@ -7,6 +8,10 @@
 ![Status](https://img.shields.io/badge/Status-Deployed-success?style=for-the-badge)
 
 ---
+
+## Project Documentation
+For a deep dive into the business context, methodology, and strategic roadmap, please refer to the:
+* **[Executive & Technical Case Study (PDF)](./docs/Case_Study_Neural_Threat_Analyzer_Luis_Moto.pdf)**
 
 ## Executive Summary
 
