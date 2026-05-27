@@ -9,10 +9,6 @@
 
 ---
 
-## Project Documentation
-For a deep dive into the business context, methodology, and strategic roadmap, please refer to the:
-* **[Executive & Technical Case Study (PDF)](./docs/Case_Study_Neural_Threat_Analyzer_Luis_Moto.pdf)**
-
 ## Executive Summary
 
 **Neural Threat Analyzer** is a machine learning system designed to classify text-based payloads for cybersecurity applications. Traditional filters often rely on static keyword detection, making them vulnerable to obfuscated or context-dependent attacks.

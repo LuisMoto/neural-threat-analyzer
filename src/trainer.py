@@ -1,20 +1,12 @@
+import tensorflow as tf
+from tensorflow.keras.layers import TextVectorization
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from data_loader import load_and_merge_data
+from preprocessing import security_preprocess
+
 import pandas as pd
 import numpy as np
-import joblib
-import json
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-from scipy.sparse import hstack
-from tqdm import tqdm
-
-from config import MODEL_PATH, VECTORIZER_PATH, RANDOM_STATE, TEST_SIZE, MAX_FEATURES
-from preprocessing import security_preprocess
-from data_loader import load_and_merge_data
-from features import extract_features
-
-tqdm.pandas(desc="Processing NLP (SpaCy)")
 
 def train_model():
     print("\n--- Training model ---")
@@ -29,92 +21,119 @@ def train_model():
     print("\n--- NLP Processing ---")
     df['Clean_Text'] = df['Text'].astype(str).progress_apply(security_preprocess)
 
-    # Split
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_temp, y_train, y_temp = train_test_split(
         df['Clean_Text'], df['Target'],
-        test_size=TEST_SIZE,
+        test_size=0.30,
         random_state=RANDOM_STATE,
         stratify=df['Target']
     )
 
-    # TF-IDF
-    vectorizer = TfidfVectorizer(
-        max_features=MAX_FEATURES,
-        ngram_range=(1, 2),
-        min_df=2,
-        max_df=0.9
-    )
-
-    X_train_vec = vectorizer.fit_transform(X_train)
-    X_test_vec = vectorizer.transform(X_test)
-
-    # Extra features
-    X_train_extra = np.array([extract_features(t) for t in X_train])
-    X_test_extra = np.array([extract_features(t) for t in X_test])
-
-    # Combine all features
-    X_train_final = hstack([X_train_vec, X_train_extra])
-    X_test_final = hstack([X_test_vec, X_test_extra])
-
-    # Model
-    model = LogisticRegression(
-        class_weight='balanced',
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp,
+        test_size=0.50,
         random_state=RANDOM_STATE,
-        max_iter=1000
+        stratify=y_temp
     )
 
-    model.fit(X_train_final, y_train)
+    # 2. Vectorización para Deep Learning
+    print("\n--- Text Vectorization ---")
+    VOCAB_SIZE = 10000
+    MAX_SEQUENCE_LENGTH = 256
 
-    # Cross-validation
-    print("\n--- Running Cross-Validation ---")
-    cv_scores = cross_val_score(model, X_train_final, y_train, cv=5)
-    print(f"--- Cross-validation accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f}) ---")
+    vectorizer = TextVectorization(
+        max_tokens=VOCAB_SIZE,
+        output_mode='int',
+        output_sequence_length=MAX_SEQUENCE_LENGTH
+    )
 
-    # Evaluation
-    y_pred = model.predict(X_test_final)
+    # Adaptar el vocabulario solo con los datos de entrenamiento
+    vectorizer.adapt(X_train)
 
-    # Structured metrics 
-    accuracy = accuracy_score(y_test, y_pred)
-    metrics = {
-        "accuracy": accuracy,
-        "cv_mean_accuracy": cv_scores.mean(),
-        "classification_report": classification_report(y_test, y_pred, output_dict=True)
-    }
+    # Transformar los textos en tensores de enteros
+    X_train_vec = vectorizer(X_train)
+    X_val_vec = vectorizer(X_val)
+    X_test_vec = vectorizer(X_test)
+
+# 3. Construcción del Transformer Encoder
+    print("\n--- Building Transformer Encoder ---")
+    embed_dim = 32  # Tamaño del vector para cada token
+    num_heads = 2   # Número de cabezas de atención
+    ff_dim = 32     # Tamaño de la red feed-forward oculta
+
+    inputs = Input(shape=(MAX_SEQUENCE_LENGTH,))
+    
+    # Capa de Embedding
+    embedding_layer = layers.Embedding(input_dim=VOCAB_SIZE, output_dim=embed_dim)(inputs)
+
+    # Bloque de Atención
+    attention_output = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(embedding_layer, embedding_layer)
+    attention_output = layers.Dropout(0.1)(attention_output)
+    out1 = layers.LayerNormalization(epsilon=1e-6)(embedding_layer + attention_output)
+
+    # Red Feed-Forward
+    ffn_output = layers.Dense(ff_dim, activation="relu")(out1)
+    ffn_output = layers.Dense(embed_dim)(ffn_output)
+    ffn_output = layers.Dropout(0.1)(ffn_output)
+    sequence_output = layers.LayerNormalization(epsilon=1e-6)(out1 + ffn_output)
+
+    # Capas de salida
+    x = layers.GlobalAveragePooling1D()(sequence_output)
+    x = layers.Dropout(0.2)(x)
+    outputs = layers.Dense(3, activation="softmax")(x) 
+
+    model = Model(inputs=inputs, outputs=outputs)
+
+    # 4. Compilación y Configuración de Callbacks
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["sparse_categorical_accuracy"]
+    )
+
+    keras_model_path = str(MODEL_PATH).replace('.pkl', '.keras')
+    
+    callbacks = [
+        EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=1e-6),
+        ModelCheckpoint(filepath=keras_model_path, monitor='val_loss', save_best_only=True)
+    ]
+
+    # 5. Entrenamiento
+    print("\n--- Training Deep Learning Model ---")
+    history = model.fit(
+        X_train_vec, y_train,
+        validation_data=(X_val_vec, y_val),
+        epochs=20, 
+        batch_size=32,
+        callbacks=callbacks
+    )
+
+    # 6. Evaluación
+    print("\n--- Evaluating Model on Test Set ---")
+    loss, accuracy = model.evaluate(X_test_vec, y_test)
+    
+    # Predicciones para reporte
+    y_pred_probs = model.predict(X_test_vec)
+    y_pred = np.argmax(y_pred_probs, axis=1)
     
     print("\n--- Confusion Matrix ---")
     print(confusion_matrix(y_test, y_pred))
     print("\n--- Classification Report ---")
     print(classification_report(y_test, y_pred))
 
-    # Save Models and Outputs
-    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
-    joblib.dump(vectorizer, VECTORIZER_PATH)
-    print("\n--- Model and Vectorizer saved ---")
-
-    # Save metrics to JSON
-    METRICS_PATH = MODEL_PATH.parent / "metrics.json"
-    with open(METRICS_PATH, "w") as f:
-        json.dump(metrics, f, indent=4)
-    print(f"--- Metrics saved to: {METRICS_PATH} ---")
-
-    # Feature importance
-    # BUG FIX: Merge TF-IDF feature names with manual feature names
-    tfidf_feature_names = vectorizer.get_feature_names_out()
-    manual_feature_names = ["has_url", "has_urgent", "has_verify", "has_select", "has_drop", "has_sql_comment", "has_equals"]
-    all_feature_names = np.concatenate([tfidf_feature_names, manual_feature_names])
-
-    # Class Phishing
-    coefficients = model.coef_[1]
-    top_features = sorted(zip(all_feature_names, coefficients), key=lambda x: x[1], reverse=True)[:20]
+    # 7. Guardar modelo y vectorizador
+    # Guardamos el vocabulario y pesos de TextVectorization para la inferencia
+    vectorizer_data = {
+        'config': vectorizer.get_config(),
+        'weights': vectorizer.get_weights()
+    }
     
-    features_df = pd.DataFrame(top_features, columns=["feature", "weight"])
-    FEATURES_PATH = MODEL_PATH.parent / "top_features.csv"
-    features_df.to_csv(FEATURES_PATH, index=False)
-    print(f"--- Top features saved to: {FEATURES_PATH} ---")
+    with open(str(VECTORIZER_PATH).replace('.pkl', '_vec.pkl'), 'wb') as f:
+        pickle.dump(vectorizer_data, f)
 
-    # Prediction dataset for Dashboard
-    # Retrieve original text (using X_test which has clean text for simplicity)
+    print(f"\n--- Model saved to: {keras_model_path} ---")
+    
+    # Dataset de predicciones para Dashboard
     results_df = pd.DataFrame({
         "Clean_Text": X_test,
         "Real_Label": y_test,
