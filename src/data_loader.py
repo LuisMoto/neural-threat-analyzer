@@ -42,19 +42,12 @@ def load_and_merge_data():
     sqli_df['Target'] = 2
 
     # UNIFICATION AND BALANCING 
+    # UNIFICATION AND BALANCING 
+    
     df_raw = pd.concat([safe_df, phishing_df, sqli_df], ignore_index=True).dropna()
     
-    print("\n--- Applying balancing ---")
-    min_size = min(df_raw['Target'].value_counts())
-    
-    df_balanced = pd.concat([
-        resample(df_raw[df_raw['Target'] == 0], n_samples=min_size, replace=False, random_state=42),
-        resample(df_raw[df_raw['Target'] == 1], n_samples=min_size, replace=False, random_state=42),
-        resample(df_raw[df_raw['Target'] == 2], n_samples=min_size, replace=False, random_state=42)
-    ])
-
-    print(f"--- Dataset created. Records per class: {min_size} ---")
-    return df_balanced
+    print("\n--- Returning full dataset ---")
+    return df_raw.sample(frac=1, random_state=42).reset_index(drop=True)
 
 if __name__ == "__main__":
     df = load_and_merge_data()

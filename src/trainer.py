@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from data_loader import load_and_merge_data
 from preprocessing import security_preprocess
+from tqdm import tqdm
 
 import pandas as pd
 import numpy as np
