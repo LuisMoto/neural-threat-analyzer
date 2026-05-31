@@ -1,13 +1,18 @@
-import tensorflow as tf
-from tensorflow.keras.layers import TextVectorization
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
-from data_loader import load_and_merge_data
-from preprocessing import security_preprocess
-from tqdm import tqdm
-
 import pandas as pd
 import numpy as np
+import pickle
+import tensorflow as tf
+from tensorflow.keras import layers, Input, Model
+from tensorflow.keras.layers import TextVectorization
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.utils.class_weight import compute_class_weight
+from tqdm import tqdm
+
+from data_loader import load_and_merge_data
+from preprocessing import security_preprocess
+from config import RANDOM_STATE, MODEL_PATH, VECTORIZER_PATH
 
 def train_model():
     print("\n--- Training model ---")
@@ -20,6 +25,7 @@ def train_model():
 
     # Preprocessing
     print("\n--- NLP Processing ---")
+    tqdm.pandas()  # <--- AQUÍ ESTÁ LA INICIALIZACIÓN FALTANTE
     df['Clean_Text'] = df['Text'].astype(str).progress_apply(security_preprocess)
 
     X_train, X_temp, y_train, y_temp = train_test_split(
@@ -55,7 +61,7 @@ def train_model():
     X_val_vec = vectorizer(X_val)
     X_test_vec = vectorizer(X_test)
 
-# 3. Construcción del Transformer Encoder
+    # 3. Construcción del Transformer Encoder
     print("\n--- Building Transformer Encoder ---")
     embed_dim = 32  # Tamaño del vector para cada token
     num_heads = 2   # Número de cabezas de atención
@@ -101,12 +107,22 @@ def train_model():
 
     # 5. Entrenamiento
     print("\n--- Training Deep Learning Model ---")
+    
+    # Calcular pesos de clase
+    class_weights = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_train),
+        y=y_train
+    )
+    weights_dict = {i: weight for i, weight in enumerate(class_weights)}
+
     history = model.fit(
         X_train_vec, y_train,
         validation_data=(X_val_vec, y_val),
         epochs=20, 
         batch_size=32,
-        callbacks=callbacks
+        callbacks=callbacks,
+        class_weight=weights_dict
     )
 
     # 6. Evaluación
@@ -123,7 +139,6 @@ def train_model():
     print(classification_report(y_test, y_pred))
 
     # 7. Guardar modelo y vectorizador
-    # Guardamos el vocabulario y pesos de TextVectorization para la inferencia
     vectorizer_data = {
         'config': vectorizer.get_config(),
         'weights': vectorizer.get_weights()
