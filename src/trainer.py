@@ -17,15 +17,13 @@ from config import RANDOM_STATE, MODEL_PATH, VECTORIZER_PATH
 def train_model():
     print("\n--- Training model ---")
 
-    # Load data
     df = load_and_merge_data()
 
     print("\n--- Distribution after balancing ---")
     print(df['Target'].value_counts())
 
-    # Preprocessing
     print("\n--- NLP Processing ---")
-    tqdm.pandas()  # <--- AQUÍ ESTÁ LA INICIALIZACIÓN FALTANTE
+    tqdm.pandas()
     df['Clean_Text'] = df['Text'].astype(str).progress_apply(security_preprocess)
 
     X_train, X_temp, y_train, y_temp = train_test_split(
@@ -42,7 +40,6 @@ def train_model():
         stratify=y_temp
     )
 
-    # 2. Vectorización para Deep Learning
     print("\n--- Text Vectorization ---")
     VOCAB_SIZE = 10000
     MAX_SEQUENCE_LENGTH = 256
@@ -53,44 +50,36 @@ def train_model():
         output_sequence_length=MAX_SEQUENCE_LENGTH
     )
 
-    # Adaptar el vocabulario solo con los datos de entrenamiento
     vectorizer.adapt(X_train)
 
-    # Transformar los textos en tensores de enteros
     X_train_vec = vectorizer(X_train)
     X_val_vec = vectorizer(X_val)
     X_test_vec = vectorizer(X_test)
 
-    # 3. Construcción del Transformer Encoder
     print("\n--- Building Transformer Encoder ---")
-    embed_dim = 32  # Tamaño del vector para cada token
-    num_heads = 2   # Número de cabezas de atención
-    ff_dim = 32     # Tamaño de la red feed-forward oculta
+    embed_dim = 32
+    num_heads = 2
+    ff_dim = 32
 
     inputs = Input(shape=(MAX_SEQUENCE_LENGTH,))
     
-    # Capa de Embedding
     embedding_layer = layers.Embedding(input_dim=VOCAB_SIZE, output_dim=embed_dim)(inputs)
 
-    # Bloque de Atención
     attention_output = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(embedding_layer, embedding_layer)
     attention_output = layers.Dropout(0.1)(attention_output)
     out1 = layers.LayerNormalization(epsilon=1e-6)(embedding_layer + attention_output)
 
-    # Red Feed-Forward
     ffn_output = layers.Dense(ff_dim, activation="relu")(out1)
     ffn_output = layers.Dense(embed_dim)(ffn_output)
     ffn_output = layers.Dropout(0.1)(ffn_output)
     sequence_output = layers.LayerNormalization(epsilon=1e-6)(out1 + ffn_output)
 
-    # Capas de salida
     x = layers.GlobalAveragePooling1D()(sequence_output)
     x = layers.Dropout(0.2)(x)
     outputs = layers.Dense(3, activation="softmax")(x) 
 
     model = Model(inputs=inputs, outputs=outputs)
 
-    # 4. Compilación y Configuración de Callbacks
     model.compile(
         optimizer="adam",
         loss="sparse_categorical_crossentropy",
@@ -105,10 +94,8 @@ def train_model():
         ModelCheckpoint(filepath=keras_model_path, monitor='val_loss', save_best_only=True)
     ]
 
-    # 5. Entrenamiento
     print("\n--- Training Deep Learning Model ---")
     
-    # Calcular pesos de clase
     class_weights = compute_class_weight(
         class_weight='balanced',
         classes=np.unique(y_train),
@@ -125,11 +112,9 @@ def train_model():
         class_weight=weights_dict
     )
 
-    # 6. Evaluación
     print("\n--- Evaluating Model on Test Set ---")
     loss, accuracy = model.evaluate(X_test_vec, y_test)
     
-    # Predicciones para reporte
     y_pred_probs = model.predict(X_test_vec)
     y_pred = np.argmax(y_pred_probs, axis=1)
     
@@ -138,10 +123,9 @@ def train_model():
     print("\n--- Classification Report ---")
     print(classification_report(y_test, y_pred))
 
-    # 7. Guardar modelo y vectorizador
     vectorizer_data = {
         'config': vectorizer.get_config(),
-        'weights': vectorizer.get_weights()
+        'vocabulary': vectorizer.get_vocabulary() 
     }
     
     with open(str(VECTORIZER_PATH).replace('.pkl', '_vec.pkl'), 'wb') as f:
@@ -149,7 +133,6 @@ def train_model():
 
     print(f"\n--- Model saved to: {keras_model_path} ---")
     
-    # Dataset de predicciones para Dashboard
     results_df = pd.DataFrame({
         "Clean_Text": X_test,
         "Real_Label": y_test,
