@@ -50,11 +50,15 @@ def train_model():
         output_sequence_length=MAX_SEQUENCE_LENGTH
     )
 
-    vectorizer.adapt(X_train)
+    X_train_np = X_train.fillna("").astype(str).to_numpy()
+    X_val_np = X_val.fillna("").astype(str).to_numpy()
+    X_test_np = X_test.fillna("").astype(str).to_numpy()
 
-    X_train_vec = vectorizer(X_train)
-    X_val_vec = vectorizer(X_val)
-    X_test_vec = vectorizer(X_test)
+    vectorizer.adapt(X_train_np)
+
+    X_train_vec = vectorizer(X_train_np)
+    X_val_vec = vectorizer(X_val_np)
+    X_test_vec = vectorizer(X_test_np)
 
     print("\n--- Building Transformer Encoder ---")
     embed_dim = 32
