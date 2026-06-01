@@ -2,7 +2,6 @@ import numpy as np
 import pickle
 import tensorflow as tf
 from tensorflow.keras.layers import TextVectorization
-
 from config import MODEL_PATH, VECTORIZER_PATH, THREAT_CLASSES
 from preprocessing import security_preprocess
 
@@ -18,8 +17,11 @@ try:
         vec_data = pickle.load(f)
         
     vectorizer = TextVectorization.from_config(vec_data['config'])
-    vectorizer.adapt(["dummy initialize"]) 
-    vectorizer.set_weights(vec_data['weights'])
+    
+    vocab_bytes = vec_data['weights'][0]
+    vocab = [w.decode('utf-8') if isinstance(w, bytes) else str(w) for w in vocab_bytes]
+    
+    vectorizer.set_vocabulary(vocab)
     
     print("--- Engine ready ---")
 except Exception as e:
@@ -28,9 +30,6 @@ except Exception as e:
     vectorizer = None
 
 def predict_threat(raw_text):
-    """
-    Receives raw text and returns prediction + confidence using the Transformer.
-    """
     if model is None or vectorizer is None or not raw_text.strip():
         return {
             "prediction": -1,
@@ -39,9 +38,7 @@ def predict_threat(raw_text):
         }
 
     clean_text = security_preprocess(raw_text)
-
     vec_text = vectorizer([clean_text])
-
     y_pred_probs = model.predict(vec_text, verbose=0) 
     
     prediction = np.argmax(y_pred_probs, axis=1)[0]
