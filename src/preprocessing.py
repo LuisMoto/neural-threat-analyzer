@@ -26,19 +26,22 @@ def security_preprocess(text):
     def analyze_url_structure(match):
         url = match.group(0)
         
-        parsed = urlparse(url if url.startswith(('http://', 'https://')) else 'http://' + url)
-        domain = parsed.netloc
-        
-        if re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', domain):
-            return 'url_ip_detected'
+        try:
+            parsed = urlparse(url if url.startswith(('http://', 'https://')) else 'http://' + url)
+            domain = parsed.netloc
             
-        if domain.count('.') > 2:
-            return 'url_excessive_subdomains'
-            
-        if len(domain) > 40 or domain.count('-') > 3:
-            return 'url_anomalous_length'
-            
-        return 'url_standard'
+            if re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', domain):
+                return 'url_ip_detected'
+                
+            if domain.count('.') > 2:
+                return 'url_excessive_subdomains'
+                
+            if len(domain) > 40 or domain.count('-') > 3:
+                return 'url_anomalous_length'
+                
+            return 'url_standard'
+        except ValueError:
+            return 'url_malformed'
     
     text = re.sub(r'http\S+', analyze_url_structure, text)
     
