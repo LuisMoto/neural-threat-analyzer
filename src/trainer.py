@@ -15,7 +15,6 @@ from preprocessing import security_preprocess
 from features import extract_features, N_FEATURES
 from config import RANDOM_STATE, MODEL_PATH, VECTORIZER_PATH
 
-
 def train_model():
     print("\n--- Training model ---")
 
@@ -25,6 +24,7 @@ def train_model():
     tqdm.pandas()
     df['Clean_Text'] = df['Text'].astype(str).progress_apply(security_preprocess)
 
+   
     X_train, X_temp, y_train, y_temp = train_test_split(
         df['Clean_Text'], df['Target'],
         test_size=0.30, random_state=RANDOM_STATE, stratify=df['Target']
@@ -34,91 +34,86 @@ def train_model():
         test_size=0.50, random_state=RANDOM_STATE, stratify=y_temp
     )
 
-    X_train_np = X_train.fillna("").astype(str).to_numpy()
-    X_val_np   = X_val.fillna("").astype(str).to_numpy()
-    X_test_np  = X_test.fillna("").astype(str).to_numpy()
-
     print("\n--- Extracting manual features ---")
-    X_train_feats = np.array([extract_features(t) for t in X_train_np], dtype=np.float32)
-    X_val_feats   = np.array([extract_features(t) for t in X_val_np],   dtype=np.float32)
-    X_test_feats  = np.array([extract_features(t) for t in X_test_np],  dtype=np.float32)
-    print(f"Feature matrix: {X_train_feats.shape}  ({N_FEATURES} features)")
-
-    print("\n--- Text Vectorization ---")
-    VOCAB_SIZE          = 10_000
-    MAX_SEQUENCE_LENGTH = 256
-
-    vectorizer = TextVectorization(
-        max_tokens=VOCAB_SIZE,
-        output_mode='int',
-        output_sequence_length=MAX_SEQUENCE_LENGTH
-    )
-    vectorizer.adapt(X_train_np)
-
-    X_train_vec = vectorizer(X_train_np)
-    X_val_vec   = vectorizer(X_val_np)
-    X_test_vec  = vectorizer(X_test_np)
-
-    print("\n--- Building Dual-Input Transformer ---")
-
-    embed_dim = 64
-    num_heads = 4
-    ff_dim    = 64
+    X_train_feats = np.array([extract_features(t) for t in X_train], dtype=np.float32)
+    X_val_feats   = np.array([extract_features(t) for t in X_val], dtype=np.float32)
+    X_test_feats  = np.array([extract_features(t) for t in X_test], dtype=np.float32)
+    
+    print(f"Manual feature matrix shape: {X_train_feats.shape}  ({N_FEATURES} features)")
 
   
-    text_input = Input(shape=(MAX_SEQUENCE_LENGTH,), name="text_input")
-    x = layers.Embedding(input_dim=VOCAB_SIZE, output_dim=embed_dim)(text_input)
+    print("\n--- Text Vectorization ---")
+    max_tokens = 8000
+    sequence_length = 256
 
-    attn_out = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(x, x)
-    attn_out = layers.Dropout(0.1)(attn_out)
-    out1     = layers.LayerNormalization(epsilon=1e-6)(x + attn_out)
+    vectorizer = TextVectorization(
+        max_tokens=max_tokens,
+        output_mode="int",
+        output_sequence_length=sequence_length
+    )
+    vectorizer.adapt(X_train)
 
-    ffn_out  = layers.Dense(ff_dim, activation="relu")(out1)
-    ffn_out  = layers.Dense(embed_dim)(ffn_out)
-    ffn_out  = layers.Dropout(0.1)(ffn_out)
-    seq_out  = layers.LayerNormalization(epsilon=1e-6)(out1 + ffn_out)
+    X_train_vec = vectorizer(X_train)
+    X_val_vec   = vectorizer(X_val)
+    X_test_vec  = vectorizer(X_test)
 
+    print("\n--- Building Dual-Input Transformer Encoder ---")
+  
+    text_input = Input(shape=(sequence_length,), name="text_input")
+    embedding = layers.Embedding(input_dim=max_tokens, output_dim=64)(text_input)
+
+    attn_output = layers.MultiHeadAttention(num_heads=2, key_dim=32)(embedding, embedding)
+    attn_output = layers.Dropout(0.1)(attn_output)
+    out1 = layers.Add()([embedding, attn_output])
+    out1 = layers.LayerNormalization(epsilon=1e-6)(out1)
+    
+    ffn_output = layers.Dense(64, activation="relu")(out1)
+    ffn_output = layers.Dense(64)(ffn_output)
+    ffn_output = layers.Dropout(0.1)(ffn_output)
+    
+    out2 = layers.Add()([out1, ffn_output])
+    seq_out = layers.LayerNormalization(epsilon=1e-6)(out2)
 
     text_vec = layers.GlobalMaxPooling1D()(seq_out)
+    text_dense = layers.Dense(16, activation="relu")(text_vec)
 
-    
     feat_input = Input(shape=(N_FEATURES,), name="feat_input")
-    feat_x = layers.Dense(32, activation="relu")(feat_input)
-    feat_x = layers.BatchNormalization()(feat_x)
-    feat_x = layers.Dense(16, activation="relu")(feat_x)
+    feat_dense = layers.Dense(32, activation="relu")(feat_input)
+    feat_dense = layers.BatchNormalization()(feat_dense)
+    feat_out = layers.Dense(16, activation="relu")(feat_dense)
 
- 
-    merged  = layers.Concatenate()([text_vec, feat_x])
-    merged  = layers.Dropout(0.3)(merged)
-    merged  = layers.Dense(64, activation="relu")(merged)
-    merged  = layers.Dropout(0.2)(merged)
-    outputs = layers.Dense(3, activation="softmax")(merged)
+    concat = layers.Concatenate()([text_dense, feat_out])
+    concat = layers.Dropout(0.2)(concat)
+    concat = layers.Dense(64, activation="relu")(concat)
+    concat = layers.Dropout(0.2)(concat)
+
+    outputs = layers.Dense(3, activation="softmax")(concat)
 
     model = Model(inputs=[text_input, feat_input], outputs=outputs)
-    model.summary()
-
+    
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
         loss="sparse_categorical_crossentropy",
         metrics=["sparse_categorical_accuracy"]
     )
+    
+    model.summary()
 
-    keras_model_path = str(MODEL_PATH).replace('.pkl', '.keras')
-
-    callbacks = [
-        EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
-        ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=1e-6),
-        ModelCheckpoint(filepath=keras_model_path, monitor='val_loss', save_best_only=True),
-    ]
-
-    class_weights = compute_class_weight(
-        class_weight='balanced', classes=np.unique(y_train), y=y_train
-    )
-    weights_dict = dict(enumerate(class_weights))
+    classes = np.unique(y_train)
+    weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
+    weights_dict = {cls: weight for cls, weight in zip(classes, weights)}
     print(f"\nClass weights: {weights_dict}")
 
+    keras_model_path = str(MODEL_PATH).replace('.pkl', '.keras')
+    
+    callbacks = [
+        EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=1e-5),
+        ModelCheckpoint(keras_model_path, save_best_only=True, monitor='val_loss')
+    ]
+
     print("\n--- Training ---")
-    model.fit(
+    history = model.fit(
         [X_train_vec, X_train_feats], y_train,
         validation_data=([X_val_vec, X_val_feats], y_val),
         epochs=25, batch_size=32,
@@ -140,6 +135,7 @@ def train_model():
         target_names=["Safe (0)", "Phishing (1)", "SQLi (2)"]
     ))
 
+
     vec_path = str(VECTORIZER_PATH).replace('.pkl', '_vec.pkl')
     with open(vec_path, 'wb') as f:
         pickle.dump({
@@ -147,19 +143,15 @@ def train_model():
             'vocabulary': vectorizer.get_vocabulary()
         }, f)
 
-    print(f"\n--- Model     → {keras_model_path}")
-    print(f"--- Vectorizer → {vec_path}")
+    print(f"\n--- Model saved  → {keras_model_path}")
+    print(f"--- Vectorizer saved → {vec_path}")
 
-  
+
     results_df = pd.DataFrame({
-        "Clean_Text":      X_test,
-        "Real_Label":      y_test.values,
-        "Predicted_Label": y_pred
+        'Real_Label': y_test,
+        'Predicted_Label': y_pred
     })
-    PREDS_PATH = MODEL_PATH.parent / "predictions.csv"
-    results_df.to_csv(PREDS_PATH, index=False)
-    print(f"--- Predictions → {PREDS_PATH}")
-
+    results_df.to_csv(str(MODEL_PATH).replace('threat_classifier.pkl', 'predictions.csv'), index=False)
 
 if __name__ == "__main__":
     train_model()
