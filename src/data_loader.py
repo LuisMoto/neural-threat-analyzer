@@ -109,6 +109,70 @@ SAFE_SPANISH_SAMPLES = [
     "La reunión mensual del club de ajedrez será en la cafetería. Votemos la hora aquí: https://doodle.com/poll/xyz123"
 ] * 4
 
+PHISHING_SPANISH_SAMPLES = [
+    "Aviso importante: Tu cuenta de BBVA ha sido restringida temporalmente. Para reactivar tus servicios, ingresa aquí: http://bbva-alertas.xyz/reactivacion",
+    "Estimado cliente, detectamos un cargo retenido en su tarjeta de crédito. Si no reconoce este cargo, cancele la operación en: http://192.168.1.15/seguridad/banamex",
+    "Tu paquete de Estafeta no pudo ser entregado por falta de información. Actualiza tu dirección de entrega hoy mismo: http://estafeta-entregas.top/rastreo",
+    "Soporte IT: Tu contraseña de correo corporativo caduca en 2 horas. Consérvala iniciando sesión en el nuevo portal: http://webmail-update.tk/login",
+    "SAT: Notificación de adeudo fiscal. Descargue el comprobante de su multa para evitar recargos en el siguiente enlace: http://sat-gob.xyz/multas",
+    "Netflix: No pudimos procesar tu último pago. Tu cuenta será suspendida al finalizar el día. Actualiza tu tarjeta en: http://netflix-pagos.online/renovar",
+    "Amazon: Tu pedido #445-9823 ha sido retenido en aduana. Paga los gastos de importación para liberar el envío: http://amazon-aduanas.click/pago",
+    "Felicidades, tu número fue seleccionado en el sorteo de aniversario de Telcel. Reclama tu equipo gratis aquí: http://premios-telcel.ml/ganador",
+    "Aviso de Recursos Humanos: Descarga tu recibo de nómina con el ajuste salarial de este mes en el portal externo: http://nomina-empleados.top/descarga",
+    "Microsoft 365: Se detectó un inicio de sesión inusual desde Rusia. Si no fuiste tú, protege tu cuenta inmediatamente: http://104.23.1.5/microsoft/secure",
+    "CFE: Tu último recibo de luz presenta un saldo vencido. Evita el corte del servicio pagando en línea ahora: http://cfe-pagos.xyz/recibo",
+    "MercadoLibre: Tu cuenta fue suspendida por actividad irregular. Para verificar tu identidad y recuperar el acceso, entra a: http://mercadolibre-seguro.tk/verificar",
+    "Santander: Tienes una transferencia retenida por $15,000 MXN. Autoriza o cancela el movimiento en tu banca electrónica: http://santander-movimientos.top/auth",
+    "Spotify: Tu suscripción Premium ha expirado. Renueva hoy con un 50% de descuento a través de este enlace exclusivo: http://spotify-promos.online/premium",
+    "Administrador de red: El espacio de tu buzón está lleno. Amplía tu cuota de almacenamiento gratis ingresando a: http://quota-update.xyz/login",
+    "Citibanamex: Su token móvil ha sido desincronizado. Para poder seguir haciendo transferencias, sincronícelo en: http://banamex-token.ml/sync",
+    "DHL Express: El mensajero no encontró a nadie en el domicilio. Reprograme su entrega pagando la tarifa de reenvío: http://dhl-mexico.click/reprogramar",
+    "Alerta de seguridad de Google: Alguien intentó acceder a tu cuenta. Cambia tu contraseña inmediatamente en: http://google-security.tk/update",
+    "Hola, te comparto el documento escaneado que me pediste. Ábrelo directamente desde mi OneDrive personal: http://onedrive-compartido.xyz/documento.pdf",
+    "Liverpool: Tienes un saldo a favor en tu monedero electrónico a punto de vencer. Úsalo hoy ingresando a: http://liverpool-recompensas.top/monedero",
+    "Estimado proveedor, adjuntamos la orden de compra de este mes. Por favor confirme la recepción en nuestro portal: http://portal-proveedores.online/login",
+    "Uber: Tu cuenta tiene un adeudo pendiente por tu último viaje. Liquida el saldo para poder seguir usando la app: http://uber-pagos.xyz/liquidar",
+    "Aviso URGENTE: Su equipo está infectado con 3 virus. Descargue nuestro antivirus gratuito para limpiar su sistema: http://antivirus-scan.tk/download",
+    "PayPal: Hemos limitado su cuenta temporalmente para protegerlo. Proporcione los datos solicitados para restaurarla: http://paypal-resolucion.ml/centro",
+    "Telmex: Tu factura digital ya está disponible. Tienes un cargo adicional por servicios no reconocidos. Revísalo en: http://telmex-factura.top/detalle",
+    "Hola, mira estas fotos del fin de semana, creo que sales en una de ellas. Descárgalas antes de que las borre: http://galeria-fotos.xyz/ver",
+    "Apple ID: Su cuenta ha sido bloqueada por razones de seguridad. Desbloquéela verificando sus preguntas de seguridad en: http://apple-soporte.click/unlock",
+    "Buro de Crédito: Tienes un nuevo reporte negativo en tu historial. Consulta el detalle y quién lo emitió en: http://buro-alertas.online/reporte",
+    "Estimado estudiante, su inscripción al próximo semestre está detenida por falta de pago. Regularice su situación en: http://servicios-escolares.xyz/pago",
+    "Zoom: Te han invitado a una reunión de carácter urgente. Únete a la sala de conferencias haciendo clic aquí: http://zoom-videocall.tk/join",
+
+    "Hola, soy el director. Estoy en una junta y no puedo hablar. Necesito que compres 10 tarjetas de regalo de Apple de $1000 y me pases los códigos por aquí urgente.",
+    "Compañeros, el área de sistemas está actualizando la base de datos. Por favor, respondan a este correo con su usuario y contraseña actual para no perder el acceso.",
+    "Estimado cliente, nuestra cuenta bancaria principal está en mantenimiento. A partir de hoy, por favor realice todos los pagos de facturas a la nueva cuenta CLABE que le adjunto.",
+    "Hola equipo, necesito que alguien de finanzas me apoye haciendo una transferencia urgente a un nuevo proveedor en el extranjero. Es confidencial, avísenme quién está disponible.",
+    "Recursos Humanos: Estamos actualizando los expedientes. Por favor, envía copia de tu INE, comprobante de domicilio y estado de cuenta bancario respondiendo a este mensaje.",
+    "Aviso importante: Si no confirmas tu asistencia a la capacitación respondiendo con tu número de empleado y NIP, se te descontará el día de mañana.",
+    "Hola, perdí mi celular y estoy usando un correo prestado. Tuve una emergencia médica, ¿crees que me puedas prestar $2000? Te los deposito el lunes sin falta.",
+    "Proveedor, detectamos un error en su última factura. Adjunto el PDF con los detalles. Si no lo corrigen para hoy a las 5pm, cancelaremos el contrato.",
+    "Soporte Técnico: Hemos detectado actividad sospechosa en tu equipo. Responde a este correo con tu clave de administrador local para que podamos escanearlo remotamente.",
+    "Hola, soy de contabilidad. Me rebotó el último pago de tu nómina. Pásame tu número de cuenta completo y la CLABE interbancaria para volver a intentarlo.",
+    "Estimado usuario, su cuenta de correo será eliminada en 24 horas si no valida su identidad. Responda a este mensaje con la palabra 'CONFIRMAR' y su contraseña.",
+    "Atención: Somos del equipo legal de la empresa. Necesitamos que nos envíes toda la información confidencial del proyecto actual para una auditoría sorpresa.",
+    "Hola, estoy de viaje de negocios y mi tarjeta corporativa no pasa. ¿Puedes transferir $5000 a la cuenta del hotel? El lunes a primera hora te lo reembolso.",
+    "Estimado, adjunto la cotización que solicitó. El archivo está protegido, la contraseña para abrir el PDF es su misma clave de acceso al sistema.",
+    "Notificación de cobranza: Su cuenta tiene un atraso de 90 días. Adjuntamos la demanda mercantil. Responda este correo de inmediato para llegar a un acuerdo extrajudicial.",
+    "Hola, ¿estás en la oficina? Necesito que me hagas un favor muy rápido, es completamente confidencial y no puedo decírselo a nadie más del equipo.",
+    "Aviso de Sistemas: La VPN cambiará de configuración esta noche. Envíe sus credenciales actuales por este medio para que le generemos el nuevo perfil de conexión.",
+    "Atención a todos: Por disposición oficial, necesitamos que confirmen su número de seguro social y RFC respondiendo a esta cadena antes del mediodía.",
+    "Soy el proveedor de papelería. Cambiamos de razón social, por favor actualicen nuestra información en su sistema de pagos con la nueva cuenta que viene en el documento anexo.",
+    "Hola, vi tu currículum en línea. Tenemos una vacante perfecta para ti. Para iniciar el proceso, envíanos un depósito de $500 para cubrir los gastos de tu examen médico.",
+    "Estimado contribuyente, su declaración anual presenta inconsistencias. Responda este correo detallando sus ingresos de los últimos tres meses para evitar una auditoría.",
+    "Equipo, el servidor de archivos se cayó. Quien tenga una copia local de la base de datos de clientes, por favor envíemela directamente a este correo personal.",
+    "Hola, soy tu jefe. Olvidé mi computadora en la casa. Pásame tu usuario y contraseña de SAP rápido para autorizar unas órdenes de compra desde mi celular.",
+    "Notificación urgente: Su póliza de seguro de auto ha sido cancelada por falta de pago. Envíe los datos de una nueva tarjeta de crédito para reactivarla de inmediato.",
+    "Estimado socio, el pago de dividendos de este trimestre está listo. Confirme su número de cuenta bancaria y el nombre del titular para proceder con la transferencia.",
+    "Atención: Detectamos un virus en la red local. Todos los empleados deben enviar su clave de acceso a sistemas@soporte-externo.com para verificar que no estén comprometidos.",
+    "Hola, te escribo desde la gerencia. Necesito que modifiques la cuenta de depósito del proveedor principal y pongas esta nueva CLABE temporal para el pago de mañana.",
+    "Aviso de nómina: Tienes un bono pendiente por cobrar. Para liberarlo, es necesario que nos confirmes tu salario actual y número de cuenta respondiendo a este correo.",
+    "Estimado usuario, su paquete está retenido. Para agilizar la liberación, responda este mensaje adjuntando una foto de su tarjeta de crédito por ambos lados y su identificación.",
+    "Hola, necesito acceso de administrador a la base de datos de producción por 5 minutos para arreglar un error crítico. Pásame las credenciales por aquí, yo me hago responsable."
+] * 4
+
 
 def load_and_merge_data():
     print("\n--- Starting data merge ---")
@@ -133,10 +197,11 @@ def load_and_merge_data():
     nigerian = pd.read_csv(DATA_DIR / "Nigerian_Fraud.csv")[['body']].rename(columns={'body': 'Text'})
     ceas     = pd.read_csv(DATA_DIR / "CEAS_08.csv")
     ceas     = ceas[ceas['label'] == 1][['body']].rename(columns={'body': 'Text'})
+    
+    phishing_synthetic = pd.DataFrame({'Text': PHISHING_SPANISH_SAMPLES})
 
-    phishing_df = pd.concat([nazario, nigerian, ceas], ignore_index=True)
+    phishing_df = pd.concat([nazario, nigerian, ceas, phishing_synthetic], ignore_index=True)
     phishing_df['Target'] = 1
-
 
     print("--- Loading SQLi attacks ---")
 
@@ -145,7 +210,6 @@ def load_and_merge_data():
     sqli_df = sqli_df[sqli_df['Label'] == 1]
     sqli_df = sqli_df[['Sentence']].rename(columns={'Sentence': 'Text'})
     sqli_df['Target'] = 2
-
    
     df_raw = pd.concat([safe_df, phishing_df, sqli_df], ignore_index=True)
     df_raw = df_raw.dropna(subset=['Text'])
@@ -153,7 +217,6 @@ def load_and_merge_data():
 
     print("\n--- Raw class distribution (before balancing) ---")
     print(df_raw['Target'].value_counts())
-
 
     counts    = df_raw['Target'].value_counts()
     min_count = counts.min()
