@@ -27,15 +27,11 @@ def train_model():
 
     X_train, X_temp, y_train, y_temp = train_test_split(
         df['Clean_Text'], df['Target'],
-        test_size=0.30,
-        random_state=RANDOM_STATE,
-        stratify=df['Target']
+        test_size=0.30, random_state=RANDOM_STATE, stratify=df['Target']
     )
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp, y_temp,
-        test_size=0.50,
-        random_state=RANDOM_STATE,
-        stratify=y_temp
+        test_size=0.50, random_state=RANDOM_STATE, stratify=y_temp
     )
 
     X_train_np = X_train.fillna("").astype(str).to_numpy()
@@ -46,8 +42,7 @@ def train_model():
     X_train_feats = np.array([extract_features(t) for t in X_train_np], dtype=np.float32)
     X_val_feats   = np.array([extract_features(t) for t in X_val_np],   dtype=np.float32)
     X_test_feats  = np.array([extract_features(t) for t in X_test_np],  dtype=np.float32)
-
-    print(f"Manual feature matrix shape: {X_train_feats.shape}  ({N_FEATURES} features)")
+    print(f"Feature matrix: {X_train_feats.shape}  ({N_FEATURES} features)")
 
     print("\n--- Text Vectorization ---")
     VOCAB_SIZE          = 10_000
@@ -64,16 +59,15 @@ def train_model():
     X_val_vec   = vectorizer(X_val_np)
     X_test_vec  = vectorizer(X_test_np)
 
-    print("\n--- Building Dual-Input Transformer Encoder ---")
+    print("\n--- Building Dual-Input Transformer ---")
 
-    embed_dim  = 64   
-    num_heads  = 4    
-    ff_dim     = 64
+    embed_dim = 64
+    num_heads = 4
+    ff_dim    = 64
 
-
-    text_input      = Input(shape=(MAX_SEQUENCE_LENGTH,), name="text_input")
-    x               = layers.Embedding(input_dim=VOCAB_SIZE, output_dim=embed_dim)(text_input)
-
+  
+    text_input = Input(shape=(MAX_SEQUENCE_LENGTH,), name="text_input")
+    x = layers.Embedding(input_dim=VOCAB_SIZE, output_dim=embed_dim)(text_input)
 
     attn_out = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(x, x)
     attn_out = layers.Dropout(0.1)(attn_out)
@@ -84,15 +78,17 @@ def train_model():
     ffn_out  = layers.Dropout(0.1)(ffn_out)
     seq_out  = layers.LayerNormalization(epsilon=1e-6)(out1 + ffn_out)
 
-    text_vec = layers.GlobalAveragePooling1D()(seq_out)  
 
+    text_vec = layers.GlobalMaxPooling1D()(seq_out)
 
+    
     feat_input = Input(shape=(N_FEATURES,), name="feat_input")
-    feat_dense = layers.Dense(32, activation="relu")(feat_input)
-    feat_dense = layers.BatchNormalization()(feat_dense)
-    feat_dense = layers.Dense(16, activation="relu")(feat_dense)
+    feat_x = layers.Dense(32, activation="relu")(feat_input)
+    feat_x = layers.BatchNormalization()(feat_x)
+    feat_x = layers.Dense(16, activation="relu")(feat_x)
 
-    merged  = layers.Concatenate()([text_vec, feat_dense])
+ 
+    merged  = layers.Concatenate()([text_vec, feat_x])
     merged  = layers.Dropout(0.3)(merged)
     merged  = layers.Dense(64, activation="relu")(merged)
     merged  = layers.Dropout(0.2)(merged)
@@ -116,21 +112,17 @@ def train_model():
     ]
 
     class_weights = compute_class_weight(
-        class_weight='balanced',
-        classes=np.unique(y_train),
-        y=y_train
+        class_weight='balanced', classes=np.unique(y_train), y=y_train
     )
     weights_dict = dict(enumerate(class_weights))
     print(f"\nClass weights: {weights_dict}")
 
     print("\n--- Training ---")
-    history = model.fit(
+    model.fit(
         [X_train_vec, X_train_feats], y_train,
         validation_data=([X_val_vec, X_val_feats], y_val),
-        epochs=25,
-        batch_size=32,
-        callbacks=callbacks,
-        class_weight=weights_dict
+        epochs=25, batch_size=32,
+        callbacks=callbacks, class_weight=weights_dict
     )
 
     print("\n--- Evaluating on Test Set ---")
@@ -148,18 +140,17 @@ def train_model():
         target_names=["Safe (0)", "Phishing (1)", "SQLi (2)"]
     ))
 
-
-    vectorizer_data = {
-        'config':     vectorizer.get_config(),
-        'vocabulary': vectorizer.get_vocabulary()
-    }
     vec_path = str(VECTORIZER_PATH).replace('.pkl', '_vec.pkl')
     with open(vec_path, 'wb') as f:
-        pickle.dump(vectorizer_data, f)
+        pickle.dump({
+            'config':     vectorizer.get_config(),
+            'vocabulary': vectorizer.get_vocabulary()
+        }, f)
 
-    print(f"\n--- Model saved  → {keras_model_path}")
-    print(f"--- Vectorizer saved → {vec_path}")
+    print(f"\n--- Model     → {keras_model_path}")
+    print(f"--- Vectorizer → {vec_path}")
 
+  
     results_df = pd.DataFrame({
         "Clean_Text":      X_test,
         "Real_Label":      y_test.values,
@@ -167,7 +158,7 @@ def train_model():
     })
     PREDS_PATH = MODEL_PATH.parent / "predictions.csv"
     results_df.to_csv(PREDS_PATH, index=False)
-    print(f"--- Predictions saved → {PREDS_PATH}")
+    print(f"--- Predictions → {PREDS_PATH}")
 
 
 if __name__ == "__main__":

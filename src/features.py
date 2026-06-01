@@ -1,3 +1,5 @@
+URL_SAFE_TOKENS = {"url_safe_domain"}
+
 URL_SUSPICIOUS_TOKENS = {
     "url_ip_detected",
     "url_suspicious_tld",
@@ -7,8 +9,7 @@ URL_SUSPICIOUS_TOKENS = {
     "url_malformed",
 }
 
-URL_ALL_TOKENS = URL_SUSPICIOUS_TOKENS | {"url_standard"}
-
+URL_ALL_TOKENS = URL_SUSPICIOUS_TOKENS | URL_SAFE_TOKENS | {"url_unknown"}
 
 SQLI_TOKENS = {
     "sql_tautology",
@@ -18,6 +19,8 @@ SQLI_TOKENS = {
     "sql_union_select",
     "sql_exec",
     "sql_xp_cmdshell",
+    "sql_insert_into",
+    "sql_select_star",
 }
 
 PHISHING_KEYWORDS_EN = {
@@ -34,50 +37,45 @@ PHISHING_KEYWORDS_ES = {
 
 
 def extract_features(preprocessed_text: str) -> list:
-    """
-    Extract 12 binary/count features from ALREADY preprocessed text.
-    Input must be the output of security_preprocess(), not raw text.
-
-    Returns a list of 12 numeric features.
-    """
     tokens = set(preprocessed_text.lower().split())
-    text = preprocessed_text.lower()
+    text   = preprocessed_text.lower()
 
-   
-    has_any_url = int(bool(tokens & URL_ALL_TOKENS))
-    has_suspicious_url = int(bool(tokens & URL_SUSPICIOUS_TOKENS))
-    has_ip_url = int("url_ip_detected" in tokens)
-    has_phishing_path = int("url_phishing_path" in tokens)
+    has_safe_url        = int(bool(tokens & URL_SAFE_TOKENS))
+    has_any_url         = int(bool(tokens & URL_ALL_TOKENS))
+    has_suspicious_url  = int(bool(tokens & URL_SUSPICIOUS_TOKENS))
+    has_ip_url          = int("url_ip_detected" in tokens)
+    has_phishing_path   = int("url_phishing_path" in tokens)
 
-
-    has_sqli_token = int(bool(tokens & SQLI_TOKENS))
-    has_tautology = int("sql_tautology" in tokens)
+    has_sqli_token   = int(bool(tokens & SQLI_TOKENS))
+    has_tautology    = int("sql_tautology" in tokens)
     has_union_select = int("sql_union_select" in tokens)
-    has_raw_equals = int("=" in text and has_sqli_token)  
+    has_drop_table   = int("sql_drop_table" in tokens)
+    has_select_star  = int("sql_select_star" in tokens)
 
     has_phishing_en = int(bool(tokens & PHISHING_KEYWORDS_EN))
     has_phishing_es = int(bool(tokens & PHISHING_KEYWORDS_ES))
-    phishing_keyword_count = len(tokens & (PHISHING_KEYWORDS_EN | PHISHING_KEYWORDS_ES))
-    phishing_signal_density = min(phishing_keyword_count / max(len(tokens), 1) * 10, 1.0)
+    phishing_kw_count = len(tokens & (PHISHING_KEYWORDS_EN | PHISHING_KEYWORDS_ES))
+    phishing_density  = min(phishing_kw_count / max(len(tokens), 1) * 10, 1.0)
 
-
-    url_plus_phishing = int(has_any_url and (has_phishing_en or has_phishing_es))
+ 
+    url_plus_phishing = int(has_suspicious_url and (has_phishing_en or has_phishing_es))
 
     return [
-        has_any_url,            # 0
-        has_suspicious_url,     # 1
-        has_ip_url,             # 2
-        has_phishing_path,      # 3
-        has_sqli_token,         # 4
-        has_tautology,          # 5
-        has_union_select,       # 6
-        has_raw_equals,         # 7
-        has_phishing_en,        # 8
-        has_phishing_es,        # 9
-        phishing_signal_density,# 10
-        url_plus_phishing,      # 11
+        has_safe_url,       # 0 
+        has_any_url,        # 1
+        has_suspicious_url, # 2
+        has_ip_url,         # 3
+        has_phishing_path,  # 4
+        has_sqli_token,     # 5
+        has_tautology,      # 6
+        has_union_select,   # 7
+        has_drop_table,     # 8
+        has_select_star,    # 9
+        has_phishing_en,    # 10
+        has_phishing_es,    # 11
+        phishing_density,   # 12
+        url_plus_phishing,  # 13
     ]
 
 
-
-N_FEATURES = 12
+N_FEATURES = 14
