@@ -1,6 +1,7 @@
 import spacy
 import re
 import unicodedata
+from urllib.parse import urlparse
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -22,13 +23,24 @@ def security_preprocess(text):
     text = text.lower()
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore')
         
-    def replace_url(match):
+    def analyze_url_structure(match):
         url = match.group(0)
-        if any(domain in url for domain in ['github', 'linkedin', 'google', 'microsoft']):
-            return 'safe_link'
-        return 'suspicious_link'
+        
+        parsed = urlparse(url if url.startswith(('http://', 'https://')) else 'http://' + url)
+        domain = parsed.netloc
+        
+        if re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', domain):
+            return 'url_ip_detected'
+            
+        if domain.count('.') > 2:
+            return 'url_excessive_subdomains'
+            
+        if len(domain) > 40 or domain.count('-') > 3:
+            return 'url_anomalous_length'
+            
+        return 'url_standard'
     
-    text = re.sub(r'http\S+', replace_url, text)
+    text = re.sub(r'http\S+', analyze_url_structure, text)
     
     text = text.replace("1=1", "sql_tautology")
     text = text.replace("'1'='1'", "sql_tautology")
