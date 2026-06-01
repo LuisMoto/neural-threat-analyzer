@@ -1,28 +1,36 @@
-import joblib
 import numpy as np
-from scipy.sparse import hstack
+import pickle
+import tensorflow as tf
+from tensorflow.keras.layers import TextVectorization
 
 from config import MODEL_PATH, VECTORIZER_PATH, THREAT_CLASSES
 from preprocessing import security_preprocess
-from features import extract_features
 
-# Load models
+KERAS_MODEL_PATH = str(MODEL_PATH).replace('.pkl', '.keras')
+KERAS_VEC_PATH = str(VECTORIZER_PATH).replace('.pkl', '_vec.pkl')
+
 try:
-    print("--- Starting inference engine ---")
-    model = joblib.load(MODEL_PATH)
-    vectorizer = joblib.load(VECTORIZER_PATH)
+    print("--- Starting Deep Learning inference engine ---")
+    
+    model = tf.keras.models.load_model(KERAS_MODEL_PATH)
+    
+    with open(KERAS_VEC_PATH, 'rb') as f:
+        vec_data = pickle.load(f)
+        
+    vectorizer = TextVectorization.from_config(vec_data['config'])
+    vectorizer.adapt(["dummy initialize"]) 
+    vectorizer.set_weights(vec_data['weights'])
+    
     print("--- Engine ready ---")
-except FileNotFoundError:
-    print("--- ERROR: Models not found. Run train_model first ---")
+except Exception as e:
+    print(f"--- ERROR loading models: {e} ---")
     model = None
     vectorizer = None
 
-
 def predict_threat(raw_text):
     """
-    Receives raw text and returns prediction + confidence.
+    Receives raw text and returns prediction + confidence using the Transformer.
     """
-    # sklearn objects overload __bool__ and can raise ValueError.
     if model is None or vectorizer is None or not raw_text.strip():
         return {
             "prediction": -1,
@@ -30,24 +38,17 @@ def predict_threat(raw_text):
             "confidence": 0.0
         }
 
-    # 1. Preprocessing
     clean_text = security_preprocess(raw_text)
 
-    # 2. TF-IDF
-    vec_text = vectorizer.transform([clean_text])
+    vec_text = vectorizer([clean_text])
 
-    # 3. Manual features
-    extra_features = np.array([extract_features(clean_text)])
-
-    # 4. Combine
-    final_input = hstack([vec_text, extra_features])
-
-    # 5. Prediction
-    prediction = model.predict(final_input)[0]
-    confidence = model.predict_proba(final_input).max() * 100
+    y_pred_probs = model.predict(vec_text, verbose=0) 
+    
+    prediction = np.argmax(y_pred_probs, axis=1)[0]
+    confidence = np.max(y_pred_probs) * 100
 
     return {
         "prediction": int(prediction),
-        "threat_name": THREAT_CLASSES.get(prediction, "Unknown"),
+        "threat_name": THREAT_CLASSES.get(int(prediction), "Unknown"),
         "confidence": float(confidence)
     }
