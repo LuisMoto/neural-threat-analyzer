@@ -10,7 +10,7 @@
 
 ## Resumen del Proyecto
 
-**Neural Threat Analyzer** es un sistema de aprendizaje automático diseñado para clasificar textos y cargas útiles (payloads) en el contexto de la ciberseguridad. Los filtros tradicionales suelen depender de la detección estática de palabras clave, lo que los hace vulnerables a ataques ofuscados o dependientes del contexto.
+Es un sistema de aprendizaje automático diseñado para clasificar textos y cargas útiles (payloads) en el contexto de la ciberseguridad. Los filtros tradicionales suelen depender de la detección estática de palabras clave, lo que los hace vulnerables a ataques ofuscados o dependientes del contexto.
 
 Este proyecto aborda esa limitación implementando un enfoque híbrido que combina el **procesamiento semántico del lenguaje (NLP)** mediante redes neuronales con la **extracción de características estructurales**. Este *pipeline* es capaz de clasificar y detectar patrones asociados con:
 
@@ -19,12 +19,6 @@ Este proyecto aborda esa limitación implementando un enfoque híbrido que combi
 - **Ataques de Inyección SQL (SQLi)**
 
 El sistema permite realizar inferencia interactiva bajo demanda, generando puntajes de probabilidad e integrando un panel de visualización de métricas para evaluar el rendimiento del modelo.
-
----
-
-## Documentación
-Para una revisión detallada de la metodología, el preprocesamiento de datos y el diseño de la arquitectura de la red, consultar el siguiente documento:
-* **[Caso de Estudio y Documentación Técnica (PDF)](./docs/Case_Study_Neural_Threat_Analyzer_Luis_Moto.pdf)**
 
 ---
 
