@@ -1,8 +1,14 @@
+# Importación de librerías para el manejo y balanceo de datos
 import pandas as pd
 import numpy as np
 from sklearn.utils import resample
 from config import DATA_DIR, SQLI_DATA, ENRON_DATA
 
+
+# MUESTRAS SINTÉTICAS EN ESPAÑOL
+
+# Los datasets públicos clásicos (Enron, Nazario, etc.) están en inglés. Para que nuestro modelo detecte amenazas en nuestro contexto real (universidad, empresas locales), decidí inyectar ejemplos creados manualmente en español.
+# Esto previene que la red asocie directamente "idioma español = anomalía" y le enseña a identificar la intención semántica sin importar el idioma.
 
 SAFE_SPANISH_SAMPLES = [
     "Hola equipo, adjunto el reporte de métricas de esta semana. Por favor denle una leída antes de nuestra reunión del martes.",
@@ -109,6 +115,7 @@ SAFE_SPANISH_SAMPLES = [
     "La reunión mensual del club de ajedrez será en la cafetería. Votemos la hora aquí: https://doodle.com/poll/xyz123"
 ] * 4
 
+# Ejemplos manuales para enseñar la intención de un ciberataque en español
 PHISHING_SPANISH_SAMPLES = [
     "Aviso importante: Tu cuenta de BBVA ha sido restringida temporalmente. Para reactivar tus servicios, ingresa aquí: http://bbva-alertas.xyz/reactivacion",
     "Estimado cliente, detectamos un cargo retenido en su tarjeta de crédito. Si no reconoce este cargo, cancele la operación en: http://192.168.1.15/seguridad/banamex",
@@ -175,10 +182,13 @@ PHISHING_SPANISH_SAMPLES = [
 
 
 def load_and_merge_data():
+    # Un reto crítico en ciberseguridad es la escasez de datasets multiclase que estén balanceados, para resolver esto, abordamos el problema sintetizando un corpus unificado a partir de cinco fuentes distintas
     print("\n--- Starting data merge ---")
 
     print("--- Loading safe emails (Ling + Enron Ham + Spanish synthetic) ---")
-
+    
+    # 1. CLASE 0: CONTENIDO SEGURO (SAFE) 
+    # Para la clase de contenido seguro (0), usamos Enron Corpus y Ling-Spam para proveer una línea base de comunicación corporativa y profesional
     ling_df = pd.read_csv(DATA_DIR / "Ling.csv")
     ling_df = ling_df[ling_df['label'] == 0][['body']].rename(columns={'body': 'Text'})
 
@@ -186,6 +196,7 @@ def load_and_merge_data():
     enron_df['Text'] = enron_df['Subject'].fillna('') + " " + enron_df['Message'].fillna('')
     enron_df = enron_df[enron_df['Spam/Ham'] == 'ham'][['Text']]
 
+    # Concatenamos nuestros datos sintéticos para dar robustez en nuestro entorno real
     spanish_safe_df = pd.DataFrame({'Text': SAFE_SPANISH_SAMPLES})
 
     safe_df = pd.concat([ling_df, enron_df, spanish_safe_df], ignore_index=True)
@@ -193,6 +204,8 @@ def load_and_merge_data():
 
     print("--- Loading Phishing attacks ---")
 
+    # 2. CLASE 1: ATAQUES DE PHISHING
+    # Para la clase de Phishing (1), usamos Nazario, Nigerian Fraud y CEAS_08 para capturar tácticas de ingeniería social y marcadores de urgencia
     nazario  = pd.read_csv(DATA_DIR / "Nazario.csv")[['body']].rename(columns={'body': 'Text'})
     nigerian = pd.read_csv(DATA_DIR / "Nigerian_Fraud.csv")[['body']].rename(columns={'body': 'Text'})
     ceas     = pd.read_csv(DATA_DIR / "CEAS_08.csv")
@@ -205,12 +218,15 @@ def load_and_merge_data():
 
     print("--- Loading SQLi attacks ---")
 
+    # 3. CLASE 2: INYECCIÓN SQL (SQLi) 
+    # Para la clase de inyección SQL (2), usamos el SQLIV Technical Dataset para representar cargas útiles maliciosas estructuradas y la sintaxis de los exploits
     sqli_df = pd.read_csv(SQLI_DATA, on_bad_lines='skip')
     sqli_df['Label'] = pd.to_numeric(sqli_df['Label'], errors='coerce')
     sqli_df = sqli_df[sqli_df['Label'] == 1]
     sqli_df = sqli_df[['Sentence']].rename(columns={'Sentence': 'Text'})
     sqli_df['Target'] = 2
-   
+    
+    # 4. LIMPIEZA INICIAL DE NULOS
     df_raw = pd.concat([safe_df, phishing_df, sqli_df], ignore_index=True)
     df_raw = df_raw.dropna(subset=['Text'])
     df_raw = df_raw[df_raw['Text'].str.strip() != '']
@@ -218,6 +234,10 @@ def load_and_merge_data():
     print("\n--- Raw class distribution (before balancing) ---")
     print(df_raw['Target'].value_counts())
 
+
+    # 5. BALANCEO ESTRATÉGICO DE DATOS (UNDERSAMPLING)
+
+    # Calculamos el tamaño de la clase con menos muestras para emparejar hacia abajo (undersampling) limitando a un máximo de 15,000 muestras por clase para no saturar la RAM durante el entrenamiento.
     counts    = df_raw['Target'].value_counts()
     min_count = counts.min()
     target_n  = min(min_count, 15_000)
@@ -226,6 +246,8 @@ def load_and_merge_data():
     for cls in df_raw['Target'].unique():
         cls_df = df_raw[df_raw['Target'] == cls]
         if len(cls_df) > target_n:
+            # Para prevenir que el modelo se desvíe hacia la clase mayoritaria de contenido seguro, aplicamos una estricta estrategia de submuestreo (undersampling) para obtener una distribución balanceada
+            # Esto asegura que la sensibilidad del modelo a las amenazas no se diluya por el alto volumen de datos legítimos
             cls_df = resample(cls_df, n_samples=target_n, replace=False, random_state=42)
         balanced_parts.append(cls_df)
 
@@ -234,6 +256,7 @@ def load_and_merge_data():
     print("\n--- Balanced class distribution ---")
     print(df_balanced['Target'].value_counts())
 
+    # Finalmente, hacemos un shuffle (frac=1) para garantizar que los mini-batches de la red neuronal reciban muestras mezcladas durante el entrenamiento.
     return df_balanced.sample(frac=1, random_state=42).reset_index(drop=True)
 
 
