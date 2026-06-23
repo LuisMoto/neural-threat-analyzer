@@ -9,7 +9,7 @@ from config import MODEL_DIR
 
 # Page Configuration
 st.set_page_config(
-    page_title="Clasificación de correos electrónicos maliciosos",
+    page_title="Malicious Email Classification",
     page_icon="shield",
     layout="wide"
 )
@@ -74,14 +74,14 @@ def load_predictions():
     return pd.read_csv(MODEL_DIR / "predictions.csv")
 
 # Dashboard Layout
-st.title("Clasificación de correos electrónicos maliciosos")
+st.title("Malicious Email Classification")
 st.markdown("---")
 
 try:
     df_preds = load_predictions()
 
     # Section 1: Key Performance Indicators
-    st.header("1. Resumen de Rendimiento del Modelo")
+    st.header("1. Model Performance Summary")
     
     col1, col2 = st.columns(2)
     
@@ -89,18 +89,18 @@ try:
     correct_preds = (df_preds["Real_Label"] == df_preds["Predicted_Label"]).sum()
     accuracy = correct_preds / len(df_preds)
     
-    col1.metric("Precisión Global (Accuracy)", f"{accuracy:.4%}")
-    col2.metric("Muestras de Prueba (Test Samples)", len(df_preds))
+    col1.metric("Global Accuracy", f"{accuracy:.4%}")
+    col2.metric("Test Samples", len(df_preds))
 
     st.markdown("---")
 
     # Section 2: Confusion Matrix & Class Distribution
-    st.header("2. Análisis de Clasificación")
+    st.header("2. Classification Analysis")
     
     left_col, right_col = st.columns(2)
     
     with left_col:
-        st.subheader("Matriz de Confusión")
+        st.subheader("Confusion Matrix")
         cm = pd.crosstab(
             df_preds["Real_Label"], 
             df_preds["Predicted_Label"], 
@@ -110,29 +110,29 @@ try:
         st.dataframe(cm.style.background_gradient(cmap='Greens'), width='stretch')
     
     with right_col:
-        st.subheader("Distribución de Predicciones")
+        st.subheader("Prediction Distribution")
         dist = df_preds["Predicted_Label"].value_counts().sort_index()
         # Mapping for clarity: 0: Safe, 1: Phishing, 2: SQLi
-        dist.index = ["Seguro (0)", "Phishing (1)", "SQLi (2)"]
+        dist.index = ["Safe (0)", "Phishing (1)", "SQLi (2)"]
         
         st.bar_chart(dist, color="#09281d")
 
     st.markdown("---")
 
     # Section 3: Error Logs (False Positives/Negatives) 
-    st.header("3. Análisis de Errores de Predicción")
-    st.markdown("Inspección de muestras donde la predicción del modelo no coincidió con la etiqueta real.")
+    st.header("3. Prediction Error Analysis")
+    st.markdown("Samples where the model's prediction did not match the true label.")
     
     errors = df_preds[df_preds["Real_Label"] != df_preds["Predicted_Label"]]
     
     if not errors.empty:
         st.dataframe(errors, width='stretch')
     else:
-        st.success("No se detectaron errores de clasificación en el conjunto de prueba actual.")
+        st.success("No classification errors detected in the current test set.")
 
 except FileNotFoundError as e:
-    st.error(f"Error: No se encontraron los archivos del modelo. Por favor, ejecuta 'trainer.py' primero.")
-    st.info(f"Archivo faltante: {e.filename}")
+    st.error(f"Error: Model files not found. Please run 'trainer.py' first.")
+    st.info(f"Missing file: {e.filename}")
 
 st.markdown("---")
-st.caption("Clasificación de correos electrónicos maliciosos | Herramienta de Auditoría Interna del Modelo")
+st.caption("Malicious Email Classification | Internal Model Audit Tool")
