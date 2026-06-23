@@ -1,6 +1,6 @@
-# Neural Threat Analyzer  
+# Neural Threat Analyzer
 
-### Procesamiento de Lenguaje Natural y Aprendizaje Automático Híbrido para la Detección de Amenazas
+### Hybrid Natural Language Processing and Machine Learning for Threat Detection
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Deep%20Learning-orange?style=for-the-badge&logo=tensorflow)
@@ -8,49 +8,53 @@
 
 ---
 
-## Resumen del Proyecto
-
-Es un sistema de aprendizaje automático diseñado para clasificar textos y cargas útiles (payloads) en el contexto de la ciberseguridad. Los filtros tradicionales suelen depender de la detección estática de palabras clave, lo que los hace vulnerables a ataques ofuscados o dependientes del contexto.
-
-Este proyecto aborda esa limitación implementando un enfoque híbrido que combina el **procesamiento semántico del lenguaje (NLP)** mediante redes neuronales con la **extracción de características estructurales**. Este *pipeline* es capaz de clasificar y detectar patrones asociados con:
-
-- **Contenido Seguro**
-- **Intentos de Phishing**
-- **Ataques de Inyección SQL (SQLi)**
-
-El sistema permite realizar inferencia interactiva bajo demanda, generando puntajes de probabilidad e integrando un panel de visualización de métricas para evaluar el rendimiento del modelo.
+**Built by [Luis Moto](https://github.com/LuisMoto) and [Nathalia Jazmín Ballesteros Luna](https://github.com/Sleepswimmings) — equal contributors.**
 
 ---
 
-## Planteamiento del Problema
+## Project Summary
 
-El proyecto explora un desafío técnico recurrente en la seguridad informática:
+A machine learning system for classifying text and payloads in a cybersecurity context. Traditional filters tend to rely on static keyword matching, which makes them vulnerable to obfuscated or context-dependent attacks.
 
-> **¿Cómo se pueden detectar amenazas sofisticadas basadas en texto que evaden los filtros estáticos tradicionales mediante el uso de Deep Learning?**
+This project addresses that limitation through a hybrid approach that combines **semantic language processing (NLP)** via neural networks with **structural feature extraction**. The pipeline classifies and detects patterns associated with:
 
-Preguntas clave abordadas durante el desarrollo:
+- **Safe Content**
+- **Phishing Attempts**
+- **SQL Injection Attacks (SQLi)**
 
-- ¿Pueden los modelos lingüísticos diferenciar la semántica de una comunicación legítima frente a la de un intento de ingeniería social?
-- ¿De qué manera la extracción manual de marcadores estructurales (URLs, comandos SQL, palabras clave anómalas) complementa el procesamiento vectorial de un modelo neuronal?
-- ¿Cómo se puede estructurar un flujo de trabajo reproducible (desde la limpieza de datos hasta la inferencia) para un problema de clasificación multiclase?
+The system supports interactive on-demand inference, generating probability scores, and includes a metrics visualization dashboard to evaluate model performance.
 
 ---
 
-## Herramientas y Tecnologías
+## The Problem
 
-| Categoría | Herramientas / Métodos |
+The project explores a recurring technical challenge in information security:
+
+> **How can sophisticated text-based threats — ones that evade traditional static filters — be detected using Deep Learning?**
+
+Key questions explored during development:
+
+- Can language models distinguish the semantics of legitimate communication from social engineering attempts?
+- How does manually extracting structural markers (URLs, SQL commands, anomalous keywords) complement the vector processing of a neural model?
+- How can a reproducible workflow — from data cleaning to inference — be structured for a multiclass classification problem?
+
+---
+
+## Tools and Technologies
+
+| Category | Tools / Methods |
 |---|---|
-| Procesamiento de Lenguaje (NLP) | SpaCy (`xx_ent_wiki_sm`), TextVectorization |
-| Arquitectura y Modelado | TensorFlow, Keras, Embeddings, Capas Densas / Atención |
-| Ingeniería de Datos | Python, Pandas, NumPy |
-| Interfaz y Visualización | Streamlit, CustomTkinter |
-| Control de Versiones | Git |
+| Natural Language Processing (NLP) | SpaCy (`xx_ent_wiki_sm`), TextVectorization |
+| Architecture and Modeling | TensorFlow, Keras, Embeddings, Dense / Attention Layers |
+| Data Engineering | Python, Pandas, NumPy |
+| Interface and Visualization | Streamlit, CustomTkinter |
+| Version Control | Git |
 
 ---
 
-## Estructura del Directorio
+## Directory Structure
 
-El proyecto está organizado de la siguiente manera para asegurar la modularidad y reproducibilidad del código:
+The project is organized as follows to ensure modularity and reproducibility:
 
 ```text
 .
@@ -58,7 +62,7 @@ El proyecto está organizado de la siguiente manera para asegurar la modularidad
 ├── requirements.txt
 ├── .gitignore
 │
-├── data/                               # Datasets de entrenamiento (Safe, Phishing, SQLi)
+├── data/                               # Training datasets (Safe, Phishing, SQLi)
 │   ├── CEAS_08.csv
 │   ├── enron_spam_data.csv
 │   ├── Ling.csv
@@ -66,24 +70,24 @@ El proyecto está organizado de la siguiente manera para asegurar la modularidad
 │   ├── Nigerian_Fraud.csv
 │   └── SQLiV.csv
 │
-├── src/                                # Código fuente del proyecto
-│   ├── app.py                          # Interfaz gráfica de escritorio (GUI)
-│   ├── config.py                       # Variables globales y rutas de directorios
-│   ├── dashboard.py                    # Aplicación web analítica en Streamlit
-│   ├── data_loader.py                  # Ingesta, limpieza y balanceo de datasets
-│   ├── features.py                     # Lógica de extracción de características manuales
-│   ├── inference_engine.py             # Lógica de predicción con el modelo entrenado
-│   ├── preprocessing.py                # Pipeline de normalización de texto y regex
-│   └── trainer.py                      # Arquitectura del modelo, compilación y entrenamiento
+├── src/                                # Project source code
+│   ├── app.py                          # Desktop GUI
+│   ├── config.py                       # Global variables and directory paths
+│   ├── dashboard.py                    # Streamlit analytics dashboard
+│   ├── data_loader.py                  # Dataset ingestion, cleaning, and balancing
+│   ├── features.py                     # Manual feature extraction logic
+│   ├── inference_engine.py             # Prediction logic using the trained model
+│   ├── preprocessing.py                # Text normalization and regex pipeline
+│   └── trainer.py                      # Model architecture, compilation, and training
 │
-├── models/                             # Archivos binarios y métricas generadas
-│   ├── metrics.json                    # Historial de rendimiento del entrenamiento
-│   ├── predictions.csv                 # Predicciones de prueba para el dashboard
-│   ├── tfidf_vectorizer.pkl            # Vectorizador TF-IDF (versión clásica)
-│   ├── tfidf_vectorizer_vec.pkl        # Configuración y vocabulario de TextVectorization
-│   ├── threat_classifier.keras         # Pesos y arquitectura del modelo entrenado
-│   └── top_features.csv                # Análisis de importancia de variables
+├── models/                             # Generated binary files and metrics
+│   ├── metrics.json                    # Training performance history
+│   ├── predictions.csv                 # Test predictions for the dashboard
+│   ├── tfidf_vectorizer.pkl            # TF-IDF vectorizer (classical version)
+│   ├── tfidf_vectorizer_vec.pkl        # TextVectorization config and vocabulary
+│   ├── threat_classifier.keras         # Trained model weights and architecture
+│   └── top_features.csv                # Feature importance analysis
 │
 └── docs/
     └── Case_Study_Neural_Threat_Analyzer_Luis_Moto.pdf
-└── .gitignore
+```
